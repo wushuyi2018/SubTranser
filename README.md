@@ -1,4 +1,7 @@
 <div align="center">
+
+> **SubTranser** — Forked from [VideoCaptioner](https://github.com/WEIFENG2333/VideoCaptioner)，在原始版本基础上修复了 3 个问题（详见 Release）。
+
   <img src="./docs/images/logo.png" alt="VideoCaptioner Logo" width="100">
   <h1>VideoCaptioner</h1>
   <p>基于大语言模型的视频字幕处理工具 — 语音识别、字幕优化、翻译、视频合成一站式处理</p>

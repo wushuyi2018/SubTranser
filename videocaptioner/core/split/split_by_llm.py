@@ -1,6 +1,6 @@
 import difflib
 import re
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..llm import call_llm
 from ..prompts import get_prompt
@@ -12,11 +12,24 @@ logger = setup_logger("split_by_llm")
 MAX_STEPS = 2  # Agent loop max retry count
 
 
+def _build_kwargs(model: str, temperature: Optional[float] = None,
+                   reasoning_effort: Optional[str] = None) -> Dict[str, Any]:
+    """Build kwargs dict for call_llm, only including set params."""
+    kwargs: Dict[str, Any] = {"model": model}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if reasoning_effort:
+        kwargs["reasoning_effort"] = reasoning_effort
+    return kwargs
+
+
 def split_by_llm(
     text: str,
     model: str = "gpt-4o-mini",
     max_word_count_cjk: int = 18,
     max_word_count_english: int = 12,
+    temperature: Optional[float] = None,
+    reasoning_effort: Optional[str] = None,
 ) -> List[str]:
     """使用LLM进行文本断句（固定使用句子Segments）
 
@@ -25,13 +38,17 @@ def split_by_llm(
         model: LLM模型名称
         max_word_count_cjk: 中文最大字符数
         max_word_count_english: 英文最大单词数
+        temperature: LLM温度参数（默认0.1）
+        reasoning_effort: LLM推理深度参数
 
     Returns:
         断句后的文本列表
     """
     try:
         return _split_with_agent_loop(
-            text, model, max_word_count_cjk, max_word_count_english
+            text, model, max_word_count_cjk, max_word_count_english,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
         )
     except Exception as e:
         logger.error(f"Sentence splitting failed: {e}")
@@ -43,6 +60,8 @@ def _split_with_agent_loop(
     model: str,
     max_word_count_cjk: int,
     max_word_count_english: int,
+    temperature: Optional[float] = None,
+    reasoning_effort: Optional[str] = None,
 ) -> List[str]:
     """使用agent loop 建立反馈循环进行文本断句，自动验证和修正"""
     prompt_path = "split/sentence"
@@ -66,8 +85,11 @@ def _split_with_agent_loop(
     for step in range(MAX_STEPS):
         response = call_llm(
             messages=messages,
-            model=model,
-            temperature=0.1,
+            **_build_kwargs(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+                reasoning_effort=reasoning_effort,
+            ),
         )
 
         result_text = response.choices[0].message.content

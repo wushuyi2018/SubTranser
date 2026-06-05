@@ -440,6 +440,46 @@ class TestFileIOEdgeCases:
 class TestParseEdgeCases:
     """测试解析边缘情况"""
 
+    def test_parse_mkv_style_srt_no_blank_lines(self):
+        """测试MKV提取的无空行SRT"""
+        srt = """1
+00:00:01,000 --> 00:00:04,000
+Hello world
+2
+00:00:05,000 --> 00:00:08,000
+Second subtitle
+3
+00:00:09,000 --> 00:00:12,000
+Third subtitle with
+continuation"""
+        asr_data = ASRData.from_srt(srt)
+        assert len(asr_data.segments) == 3
+        assert asr_data.segments[0].text == "Hello world"
+        assert asr_data.segments[0].start_time == 1000
+        assert asr_data.segments[0].end_time == 4000
+        assert asr_data.segments[1].text == "Second subtitle"
+        assert asr_data.segments[1].start_time == 5000
+        assert asr_data.segments[2].text == "Third subtitle with\ncontinuation"
+        assert asr_data.segments[2].start_time == 9000
+
+    def test_parse_mkv_style_srt_mixed_blank_lines(self):
+        """测试部分行有空格的混合SRT（部分块有部分没有）"""
+        srt = """1
+00:00:01,000 --> 00:00:04,000
+First
+
+2
+00:00:05,000 --> 00:00:08,000
+Second
+3
+00:00:09,000 --> 00:00:12,000
+Third"""
+        asr_data = ASRData.from_srt(srt)
+        assert len(asr_data.segments) == 3
+        assert asr_data.segments[0].text == "First"
+        assert asr_data.segments[1].text == "Second"
+        assert asr_data.segments[2].text == "Third"
+
     def test_parse_malformed_srt(self):
         """测试畸形SRT"""
         malformed = """1

@@ -7,7 +7,7 @@ import atexit
 import difflib
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import json_repair
 
@@ -22,6 +22,17 @@ from ..utils.text_utils import count_words
 logger = setup_logger("subtitle_optimizer")
 
 MAX_STEPS = 3
+
+
+def _build_kwargs(model: str, temperature: Optional[float] = None,
+                   reasoning_effort: Optional[str] = None) -> Dict[str, Any]:
+    """Build kwargs dict for call_llm, only including set params."""
+    kwargs: Dict[str, Any] = {"model": model}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if reasoning_effort:
+        kwargs["reasoning_effort"] = reasoning_effort
+    return kwargs
 
 
 class SubtitleOptimizer:
@@ -40,6 +51,8 @@ class SubtitleOptimizer:
         model: str,
         custom_prompt: str,
         update_callback: Optional[Callable] = None,
+        temperature: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
     ):
         """初始化优化器
 
@@ -48,14 +61,17 @@ class SubtitleOptimizer:
             batch_num: 每批处理的字幕数量
             model: LLM模型名称
             custom_prompt: 自定义优化提示词
-            temperature: LLM温度参数
             update_callback: 进度更新回调函数
+            temperature: LLM温度参数
+            reasoning_effort: LLM推理深度参数
         """
         self.thread_num = thread_num
         self.batch_num = batch_num
         self.model = model
         self.custom_prompt = custom_prompt
         self.update_callback = update_callback
+        self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
 
         self.is_running = True
         self.executor: Optional[ThreadPoolExecutor] = None
@@ -221,8 +237,11 @@ class SubtitleOptimizer:
             # 调用LLM
             response = call_llm(
                 messages=messages,
-                model=self.model,
-                temperature=0.2,
+                **_build_kwargs(
+                    model=self.model,
+                    temperature=self.temperature if self.temperature is not None else 0.2,
+                    reasoning_effort=self.reasoning_effort,
+                ),
             )
 
             result_text = response.choices[0].message.content

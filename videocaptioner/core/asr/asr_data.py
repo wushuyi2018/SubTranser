@@ -581,7 +581,23 @@ class ASRData:
         srt_time_pattern = re.compile(
             r"(\d{2}):(\d{2}):(\d{1,2})[.,](\d{3})\s-->\s(\d{2}):(\d{2}):(\d{1,2})[.,](\d{3})"
         )
-        blocks = re.split(r"\n\s*\n", srt_str.strip())
+        srt_str = srt_str.strip()
+        if not srt_str:
+            return ASRData([])
+
+        # Standard SRT: blocks separated by blank lines
+        blocks = re.split(r"\n\s*\n", srt_str)
+
+        # Fallback for MKV-extracted SRTs without blank lines, or mixed formatting.
+        # Heuristic: if "\n\n" is absent OR any block has multiple timestamp lines,
+        # re-split anchored on the sequential pattern <index>\n<timestamp>.
+        if "\n\n" not in srt_str or any(
+            len(re.findall(r"\d{2}:\d{2}:\d{1,2}[.,]\d{3}\s*-->", b)) > 1 for b in blocks
+        ):
+            blocks = re.split(
+                r"\n(?=\d+\n\d{2}:\d{2}:\d{1,2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{1,2}[.,]\d{3})",
+                srt_str,
+            )
 
         # Detect bilingual mode: all 4-line + 70% different languages
         def is_different_lang(block: str) -> bool:

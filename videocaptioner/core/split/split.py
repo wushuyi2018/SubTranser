@@ -1,7 +1,7 @@
 import atexit
 import difflib
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Union
+from typing import List, Optional, Union
 
 from videocaptioner.core.asr.asr_data import ASRData, ASRDataSeg
 from videocaptioner.core.split.split_by_llm import split_by_llm
@@ -94,6 +94,8 @@ class SubtitleSplitter:
         model,
         max_word_count_cjk: int = MAX_WORD_COUNT_CJK,
         max_word_count_english: int = MAX_WORD_COUNT_ENGLISH,
+        temperature: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
     ):
         """初始化分割器
 
@@ -102,11 +104,15 @@ class SubtitleSplitter:
             model: LLM模型名称
             max_word_count_cjk: CJK最大字数
             max_word_count_english: 英文最大单词数
+            temperature: LLM温度参数
+            reasoning_effort: LLM推理深度参数
         """
         self.thread_num = thread_num
         self.model = model
         self.max_word_count_cjk = max_word_count_cjk
         self.max_word_count_english = max_word_count_english
+        self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
         self.is_running = True
         self._init_thread_pool()
 
@@ -293,6 +299,8 @@ class SubtitleSplitter:
             model=self.model,
             max_word_count_cjk=self.max_word_count_cjk,
             max_word_count_english=self.max_word_count_english,
+            temperature=self.temperature,
+            reasoning_effort=self.reasoning_effort,
         )
 
         return self._merge_segments_based_on_sentences(segments, sentences)

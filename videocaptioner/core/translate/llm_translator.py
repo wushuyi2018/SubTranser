@@ -7,6 +7,17 @@ import json_repair
 import openai
 
 from videocaptioner.core.llm import call_llm
+
+
+def _build_llm_kwargs(model: str, temperature: Optional[float] = None,
+                      reasoning_effort: Optional[str] = None) -> Dict[str, Any]:
+    """Build kwargs dict for call_llm, only including set params."""
+    kwargs: Dict[str, Any] = {"model": model}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if reasoning_effort:
+        kwargs["reasoning_effort"] = reasoning_effort
+    return kwargs
 from videocaptioner.core.prompts import get_prompt
 from videocaptioner.core.translate.base import BaseTranslator, SubtitleProcessData, logger
 from videocaptioner.core.translate.types import TargetLanguage
@@ -27,6 +38,8 @@ class LLMTranslator(BaseTranslator):
         custom_prompt: str,
         is_reflect: bool,
         update_callback: Optional[Callable],
+        temperature: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
     ):
         super().__init__(
             thread_num=thread_num,
@@ -38,6 +51,8 @@ class LLMTranslator(BaseTranslator):
         self.model = model
         self.custom_prompt = custom_prompt
         self.is_reflect = is_reflect
+        self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
 
     def _translate_chunk(
         self, subtitle_chunk: List[SubtitleProcessData]
@@ -108,7 +123,14 @@ class LLMTranslator(BaseTranslator):
         last_response_dict = None
         # llm 反馈循环
         for _ in range(self.MAX_STEPS):
-            response = call_llm(messages=messages, model=self.model)
+            response = call_llm(
+                **_build_llm_kwargs(
+                    model=self.model,
+                    temperature=self.temperature,
+                    reasoning_effort=self.reasoning_effort,
+                ),
+                messages=messages,
+            )
             response_dict = json_repair.loads(
                 response.choices[0].message.content.strip()
             )
@@ -203,8 +225,11 @@ class LLMTranslator(BaseTranslator):
                         {"role": "system", "content": single_prompt},
                         {"role": "user", "content": data.original_text},
                     ],
-                    model=self.model,
-                    temperature=0.7,
+                    **_build_llm_kwargs(
+                        model=self.model,
+                        temperature=self.temperature if self.temperature is not None else 0.7,
+                        reasoning_effort=self.reasoning_effort,
+                    ),
                 )
                 translated_text = response.choices[0].message.content.strip()
                 data.translated_text = translated_text
