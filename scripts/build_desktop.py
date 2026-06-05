@@ -164,10 +164,40 @@ def archive(version: str) -> None:
         _archive_dir(app, ARTIFACT_DIR / f"VideoCaptioner-{version}-{tag}-app.zip")
 
 
+def build_installer(version: str) -> None:
+    """Run Inno Setup (Windows only) to produce a Setup.exe installer."""
+    iss = ROOT / "installer" / "SubTranser.iss"
+    if not iss.exists():
+        print(f"Inno Setup script not found: {iss}")
+        return
+    # Inno Setup's iscc.exe is added to PATH by the installer
+    # On CI we use Scoop or Chocolatey; fallback to common paths
+    iscc = shutil.which("iscc")
+    if not iscc:
+        # Common installation paths
+        candidates = [
+            "C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe",
+            "C:\\Program Files\\Inno Setup 6\\iscc.exe",
+            "C:\\Program Files (x86)\\Inno Setup 5\\iscc.exe",
+        ]
+        for c in candidates:
+            if Path(c).exists():
+                iscc = c
+                break
+    if not iscc:
+        print("iscc.exe not found — skipping installer build")
+        return
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    cmd = [iscc, str(iss), f"/dMyAppVersion={version}"]
+    print("+ " + " ".join(cmd))
+    subprocess.run(cmd, cwd=str(ROOT / "installer"), check=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--clean", action="store_true", help="Remove build/dist/artifacts first")
     parser.add_argument("--no-archive", action="store_true", help="Build and verify without creating zip archives")
+    parser.add_argument("--installer", action="store_true", help="Build Inno Setup installer (Windows only)")
     args = parser.parse_args()
 
     version = _version()
@@ -179,6 +209,8 @@ def main() -> int:
     verify_bundle()
     if not args.no_archive:
         archive(version)
+    if args.installer and platform.system() == "Windows":
+        build_installer(version)
     return 0
 
 

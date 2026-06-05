@@ -56,8 +56,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Install Inno Setup (Windows only)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install innosetup --no-progress --confirm
+
       - name: Build desktop bundle
-        run: uv run --with pyinstaller --with static-ffmpeg python scripts/build_desktop.py --clean
+        run: uv run --with pyinstaller --with static-ffmpeg python scripts/build_desktop.py --clean${{ runner.os == 'Windows' && ' --installer' || '' }}
 
       - name: Smoke test packaged app
         run: uv run python scripts/smoke_desktop.py dist/VideoCaptioner
@@ -66,8 +71,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ runner.os }}
-          path: artifacts/*.zip
-          if-no-files-found: error
+          path: |
+            artifacts/*.zip
+            artifacts/*.exe
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Upload to GitHub Release
@@ -79,4 +86,4 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --generate-notes
-          gh release upload "$TAG" artifacts/*.zip --clobber
+          gh release upload "$TAG" artifacts/*.zip artifacts/*.exe --clobber
