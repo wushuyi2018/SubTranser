@@ -86,4 +86,5 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --generate-notes
-          gh release upload "$TAG" artifacts/*.zip artifacts/*.exe --clobber
+          # Upload all artifacts — .exe only exists on Windows runs
+          gh release upload "$TAG" artifacts/* --clobber
