@@ -191,6 +191,8 @@ class TaskFactory:
             target_language=cfg.target_language.value,
             # 字幕提示
             custom_prompt_text=cfg.custom_prompt_text.value,
+            # LLM 参数
+            temperature=cfg.llm_temperature.value,
         )
 
         task = SubtitleTask(

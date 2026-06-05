@@ -423,6 +423,15 @@ class SettingInterface(ScrollArea):
             self.llmGroup,
         )
 
+        # LLM 生成参数
+        self.llmTemperatureCard = RangeSettingCard(
+            cfg.llm_temperature,
+            FIF.ALIGNMENT,
+            self.tr("LLM Temperature"),
+            self.tr("控制 LLM 输出的随机性，0.0 = 精确，2.0 = 随机 (默认 0.7)"),
+            self.llmGroup,
+        )
+
         # 初始化显示状态
         self.__onLLMServiceChanged(self.llmServiceCard.comboBox.currentText())
 
@@ -610,6 +619,7 @@ class SettingInterface(ScrollArea):
         for config in self.llm_service_configs.values():
             for card in config["cards"]:
                 self.llmGroup.addSettingCard(card)
+        self.llmGroup.addSettingCard(self.llmTemperatureCard)
         self.llmGroup.addSettingCard(self.checkLLMConnectionCard)
 
         # 将所有组添加到布局

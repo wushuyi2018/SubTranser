@@ -125,6 +125,9 @@ class Config(QConfig):
         "LLM", "ChatGLM_API_Base", "https://open.bigmodel.cn/api/paas/v4"
     )
 
+    # LLM 生成参数
+    llm_temperature = RangeConfigItem("LLM", "Temperature", 0.7, RangeValidator(0.0, 2.0))
+
     # ------------------- 翻译配置 -------------------
     translator_service = OptionsConfigItem(
         "Translate",

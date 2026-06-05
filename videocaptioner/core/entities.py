@@ -645,6 +645,7 @@ class SubtitleConfig:
     target_language: Optional["TargetLanguage"] = None
     subtitle_style: Optional[str] = None
     custom_prompt_text: Optional[str] = None
+    temperature: Optional[float] = None
 
     def _mask_key(self, key: Optional[str]) -> str:
         """Mask sensitive key for display"""

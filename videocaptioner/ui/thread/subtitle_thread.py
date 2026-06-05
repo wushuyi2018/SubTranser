@@ -57,6 +57,7 @@ def create_translator_from_config(
         custom_prompt=custom_prompt,
         is_reflect=config.need_reflect,
         update_callback=callback,
+        temperature=config.temperature,
     )
 
 
@@ -140,6 +141,7 @@ class SubtitleThread(QThread):
                     model=subtitle_config.llm_model,
                     max_word_count_cjk=subtitle_config.max_word_count_cjk,
                     max_word_count_english=subtitle_config.max_word_count_english,
+                    temperature=subtitle_config.temperature,
                 )
                 asr_data = splitter.split_subtitle(asr_data)
                 self.update_all.emit(asr_data.to_json())
@@ -162,6 +164,7 @@ class SubtitleThread(QThread):
                     model=subtitle_config.llm_model,
                     custom_prompt=custom_prompt or "",
                     update_callback=self.callback,
+                    temperature=subtitle_config.temperature,
                 )
                 asr_data = optimizer.optimize_subtitle(asr_data)
                 asr_data.remove_punctuation()
